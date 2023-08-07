@@ -1,0 +1,32 @@
+name: Script
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            project_module_upper: Script
+            project_module: script
+            project_system: any
+            project_architecture: any
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Chech out
+        uses: actions/checkout@v3
+      - name: Clone project
+        run: |
+          git clone https://github.com/twinkles-twinstar/TwinStar.ToolKit
+      - name: Build project
+        run: |
+          cd ./TwinStar.ToolKit/${{ matrix.project_module_upper }}
+          tsc -p .
+          pwsh ./link.ps1
+        #   zip ./.build.zip ./.build
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: latest.${{ matrix.project_system }}.${{ matrix.project_architecture }}.${{ matrix.project_module }}.zip
+          path: |
+            ./TwinStar.ToolKit/${{ matrix.project_module_upper }}/.build

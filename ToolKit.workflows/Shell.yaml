@@ -1,0 +1,86 @@
+name: Shell
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            project_module_upper: Shell
+            project_module: shell
+            project_system: windows
+            project_architecture: x86_64
+            xmake_system: windows
+            xmake_architecture: x64
+            xmake_argument: 
+            distribution_file: shell.exe
+          - os: ubuntu-latest
+            project_module_upper: Shell
+            project_module: shell
+            project_system: linux
+            project_architecture: x86_64
+            xmake_system: linux
+            xmake_architecture: x86_64
+            xmake_argument: --cc=clang-16 --cxx=clang-16
+            distribution_file: shell
+          - os: macos-latest
+            project_module_upper: Shell
+            project_module: shell
+            project_system: macintosh
+            project_architecture: x86_64
+            xmake_system: macosx
+            xmake_architecture: x86_64
+            xmake_argument: --cc=/usr/local/opt/llvm/bin/clang-16 --cxx=/usr/local/opt/llvm/bin/clang-16 --xcode_sdkver=13.1 --target_minver=13.1
+            distribution_file: shell
+          - os: ubuntu-latest
+            project_module_upper: Shell
+            project_module: shell
+            project_system: android
+            project_architecture: arm_64
+            xmake_system: android
+            xmake_architecture: arm64-v8a
+            xmake_argument: --ndk_sdkver=28 --ndk_cxxstl=c++_shared
+            distribution_file: shell
+          - os: macos-latest
+            project_module_upper: Shell
+            project_module: shell
+            project_system: iphone
+            project_architecture: arm_64
+            xmake_system: iphoneos
+            xmake_architecture: arm64
+            xmake_argument: --cc=/usr/local/opt/llvm/bin/clang-16 --cxx=/usr/local/opt/llvm/bin/clang-16 --xcode_sdkver=16.2 --target_minver=16.2
+            distribution_file: shell
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Chech out
+        uses: actions/checkout@v3
+      - name: Install llvm
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 16
+      - name: Install llvm
+        if: ${{ matrix.os == 'macos-latest' }}
+        run: |
+          brew update
+          brew install llvm@16
+      - name: Install xmake
+        uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: latest
+      - name: Clone project
+        run: |
+          git clone https://github.com/twinkles-twinstar/TwinStar.ToolKit
+      - name: Build project
+        run: |
+          cd ./TwinStar.ToolKit/${{ matrix.project_module_upper }}
+          xmake f -o .build -m release -p ${{ matrix.xmake_system }} -a ${{ matrix.xmake_architecture }} ${{ matrix.xmake_argument }}
+          xmake
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: latest.${{ matrix.project_system }}.${{ matrix.project_architecture }}.${{ matrix.project_module }}
+          path: |
+            ./TwinStar.ToolKit/${{ matrix.project_module_upper }}/.build/${{ matrix.xmake_system }}/${{ matrix.xmake_architecture }}/release/${{ matrix.distribution_file }}
